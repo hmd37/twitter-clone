@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Depends
-from app.database import engine, Base
-from app.routers import user, auth, tweet
-from app.utils.dependencies import get_current_user
+from fastapi import Depends, FastAPI
+
+from app.database import Base, engine
 from app.models.user import User
+from app.routers import auth, follow, tweet, user
+from app.utils.dependencies import get_current_user
 
 Base.metadata.create_all(bind=engine)
 
@@ -11,6 +12,8 @@ app = FastAPI(title="Twitter Clone")
 app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(tweet.router)
+app.include_router(follow.router)
+
 
 @app.get("/")
 def root():
