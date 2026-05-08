@@ -14,21 +14,27 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String)
     bio: Mapped[str | None] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
-    tweets: Mapped[list["Tweet"]] = relationship("Tweet", back_populates="author") # type: ignore
+    tweets: Mapped[list["Tweet"]] = relationship("Tweet", back_populates="author")  # type: ignore
 
     following: Mapped[list["User"]] = relationship(
         "User",
         secondary="followers",
         primaryjoin="User.id == Follow.follower_id",
         secondaryjoin="User.id == Follow.following_id",
-        back_populates="followers"
+        back_populates="followers",
     )
     followers: Mapped[list["User"]] = relationship(
         "User",
         secondary="followers",
         primaryjoin="User.id == Follow.following_id",
         secondaryjoin="User.id == Follow.follower_id",
-        back_populates="following"
+        back_populates="following",
+    )
+
+    liked_tweets: Mapped[list["Tweet"]] = relationship(  # type: ignore
+        "Tweet", secondary="likes", back_populates="liked_by"
     )

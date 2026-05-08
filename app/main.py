@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 
 from app.database import Base, engine
 from app.models.user import User
-from app.routers import auth, follow, tweet, user
+from app.routers import auth, follow, like, tweet, user
 from app.utils.dependencies import get_current_user
 
 Base.metadata.create_all(bind=engine)
@@ -13,6 +13,7 @@ app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(tweet.router)
 app.include_router(follow.router)
+app.include_router(like.router)
 
 
 @app.get("/")

@@ -18,5 +18,7 @@ class TweetResponse(BaseModel):
     content: str
     created_at: datetime
     author: TweetAuthor
+    like_count: int
+    is_liked: bool = False
 
     model_config = {"from_attributes": True}
