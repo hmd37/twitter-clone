@@ -1,11 +1,8 @@
 from fastapi import Depends, FastAPI
 
-from app.database import Base, engine
 from app.models.user import User
 from app.routers import auth, follow, like, tweet, user
 from app.utils.dependencies import get_current_user
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Twitter Clone")
 
