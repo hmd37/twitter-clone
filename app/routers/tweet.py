@@ -59,7 +59,7 @@ def get_tweets(
 ):
     tweets = (
         db.query(Tweet)
-        .order_by(Tweet.created_at.desc())
+        .order_by(Tweet.created_at.desc(), Tweet.id.desc())
         .offset(skip)
         .limit(limit)
         .all()
