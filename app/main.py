@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 
 from app.models.user import User
 from app.routers import auth, follow, like, tweet, user
-from app.utils.dependencies import get_current_user
+from app.utils.dependencies import get_current_user, require_current_user
 
 app = FastAPI(title="Twitter Clone")
 
@@ -19,5 +19,5 @@ def root():
 
 
 @app.get("/me")
-def me(current_user: User = Depends(get_current_user)):
+def me(current_user: User = Depends(require_current_user)):
     return {"id": current_user.id, "username": current_user.username}

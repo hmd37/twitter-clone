@@ -5,7 +5,7 @@ from app.models.like import Like
 from app.models.tweet import Tweet
 from app.models.user import User
 from app.schemas.tweet import TweetCreate, TweetResponse
-from app.utils.dependencies import get_current_user, get_db
+from app.utils.dependencies import get_current_user, get_db, require_current_user
 
 router = APIRouter(prefix="/tweets", tags=["Tweets"])
 
@@ -34,7 +34,7 @@ def enrich_tweet(tweet: Tweet, current_user: User | None, db: Session) -> dict:
 def create_tweet(
     tweet_data: TweetCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_current_user),
 ):
     if len(tweet_data.content) > 280:
         raise HTTPException(
@@ -87,7 +87,7 @@ def get_tweet(
 def delete_tweet(
     tweet_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_current_user),
 ):
     tweet = db.query(Tweet).filter(Tweet.id == tweet_id).first()
 

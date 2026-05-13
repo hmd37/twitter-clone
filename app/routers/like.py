@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.like import Like
 from app.models.tweet import Tweet
 from app.models.user import User
-from app.utils.dependencies import get_current_user, get_db
+from app.utils.dependencies import get_db, require_current_user
 
 router = APIRouter(tags=["Likes"])
 
@@ -13,7 +13,7 @@ router = APIRouter(tags=["Likes"])
 def like_tweet(
     tweet_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_current_user),
 ):
     tweet = db.query(Tweet).filter(Tweet.id == tweet_id).first()
 
@@ -42,7 +42,7 @@ def like_tweet(
 def unlike_tweet(
     tweet_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_current_user),
 ):
     like = (
         db.query(Like)

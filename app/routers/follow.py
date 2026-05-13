@@ -6,7 +6,7 @@ from app.models.tweet import Tweet
 from app.models.user import User
 from app.schemas.follow import FollowResponse, FollowStatsResponse
 from app.schemas.tweet import TweetResponse
-from app.utils.dependencies import get_current_user, get_db
+from app.utils.dependencies import get_current_user, get_db, require_current_user
 
 router = APIRouter(tags=["Follows"])
 
@@ -15,7 +15,7 @@ router = APIRouter(tags=["Follows"])
 def follow_user(
     username: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_current_user)
 ):
     target = db.query(User).filter(User.username == username).first()
 
@@ -42,7 +42,7 @@ def follow_user(
 def unfollow_user(
     username: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_current_user)
 ):
     target = db.query(User).filter(User.username == username).first()
 
