@@ -1,0 +1,11 @@
+.venv
+__pycache__
+*.pyc
+.env
+test.db
+twitter_clone.db
+.git
+uv.lock
+*.md
+*.toml
+.pytest_cache

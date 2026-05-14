@@ -12,3 +12,4 @@ wheels/
 .vscode
 uv.lock
 *.db
+.pytest_cache
