@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    .container { background: white; padding: 30px; border-radius: 8px; max-width: 500px; margin: auto; }
+    .code { font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1da1f2; margin: 24px 0; }
+    .footer { color: #999; font-size: 12px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome to Twitter Clone, {{ username }}!</h2>
+    <p>Your verification code is:</p>
+    <div class="code">{{ code }}</div>
+    <p>This code expires in 15 minutes.</p>
+    <p class="footer">If you didn't create an account, you can safely ignore this email.</p>
+  </div>
+</body>
+</html>
