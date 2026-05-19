@@ -5,21 +5,21 @@ import os
 
 load_dotenv()
 
-config = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM=os.getenv("MAIL_FROM"),
-    MAIL_PORT=587,
-    MAIL_SERVER="smtp.gmail.com",
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    TEMPLATE_FOLDER=Path(__file__).parent.parent / "templates"
-)
-
-mail = FastMail(config)
-
 
 async def send_verification_email(email: str, username: str, code: str):
+    config = ConnectionConfig(
+        MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+        MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+        MAIL_FROM=os.getenv("MAIL_FROM"),
+        MAIL_PORT=587,
+        MAIL_SERVER="smtp.gmail.com",
+        MAIL_STARTTLS=True,
+        MAIL_SSL_TLS=False,
+        TEMPLATE_FOLDER=Path(__file__).parent.parent / "templates"
+    )
+
+    mail = FastMail(config)
+
     message = MessageSchema(
         subject="Your Twitter Clone verification code",
         recipients=[email],
@@ -31,4 +31,3 @@ async def send_verification_email(email: str, username: str, code: str):
     )
 
     await mail.send_message(message, template_name="verification_email.html")
-    
