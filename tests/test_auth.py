@@ -29,7 +29,7 @@ def test_register_duplicate_email(client, registered_user):
     assert response.status_code == 400
 
 
-def test_login_success(client, registered_user):
+def test_login_success(client, verified_user):
     response = client.post("/auth/login", data={
         "username": "testuser",
         "password": "password123"

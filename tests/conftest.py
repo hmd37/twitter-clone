@@ -1,9 +1,12 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.main import app
+
 from app.database import Base
+from app.main import app
 from app.utils.dependencies import get_db
 
 TEST_DATABASE_URL = "sqlite:///./test.db"
@@ -12,11 +15,34 @@ engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": Fal
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+def create_verified_user(client, username: str, email: str, password: str) -> dict:
+    client.post("/users/register", json={
+        "username": username,
+        "email": email,
+        "password": password
+    })
+
+    from app.utils.redis import get_verification_code
+    code = get_verification_code(email)
+    client.post("/auth/verify-email", json={"email": email, "code": code})
+
+    login = client.post("/auth/login", data={"username": username, "password": password})
+    token = login.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.fixture(autouse=True)
 def setup_database():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def mock_send_email():
+    with patch("app.routers.user.send_verification_email", new_callable=AsyncMock) as mock1, \
+         patch("app.routers.auth.send_verification_email", new_callable=AsyncMock) as mock2:
+        yield mock1, mock2
 
 
 @pytest.fixture
@@ -45,13 +71,20 @@ def registered_user(client):
 
 
 @pytest.fixture
-def auth_headers(client):
-    # register and login in the same client instance
-    client.post("/users/register", json={
-        "username": "testuser",
+def verified_user(client, registered_user):
+    # get the code directly from Redis
+    from app.utils.redis import get_verification_code
+    code = get_verification_code("test@example.com")
+
+    client.post("/auth/verify-email", json={
         "email": "test@example.com",
-        "password": "password123"
+        "code": code
     })
+    return registered_user
+
+
+@pytest.fixture
+def auth_headers(client, verified_user):
     response = client.post("/auth/login", data={
         "username": "testuser",
         "password": "password123"

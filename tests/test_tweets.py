@@ -82,15 +82,11 @@ def test_delete_tweet_requires_auth(client, auth_headers):
 
 
 def test_delete_tweet_not_owner(client, auth_headers):
-    client.post("/users/register", json={
-        "username": "user2",
-        "email": "user2@example.com",
-        "password": "password123"
-    })
-    login = client.post("/auth/login", data={"username": "user2", "password": "password123"})
-    user2_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    from tests.conftest import create_verified_user
+    user2_headers = create_verified_user(client, "user2", "user2@example.com", "password123")
 
     created = client.post("/tweets/", json={"content": "mine"}, headers=auth_headers).json()
 
     response = client.delete(f"/tweets/{created['id']}", headers=user2_headers)
     assert response.status_code == 403
+    

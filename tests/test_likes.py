@@ -59,16 +59,10 @@ def test_is_liked_false_without_auth(client, auth_headers):
 
 
 def test_like_count_multiple_users(client, auth_headers):
+    from tests.conftest import create_verified_user
     tweet = client.post("/tweets/", json={"content": "popular"}, headers=auth_headers).json()
 
-    # create second user and like the same tweet
-    client.post("/users/register", json={
-        "username": "user2",
-        "email": "user2@example.com",
-        "password": "password123"
-    })
-    login = client.post("/auth/login", data={"username": "user2", "password": "password123"})
-    user2_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    user2_headers = create_verified_user(client, "user2", "user2@example.com", "password123")
 
     client.post(f"/tweets/{tweet['id']}/like", headers=auth_headers)
     client.post(f"/tweets/{tweet['id']}/like", headers=user2_headers)
