@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,17 +16,20 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 def create_verified_user(client, username: str, email: str, password: str) -> dict:
-    client.post("/users/register", json={
-        "username": username,
-        "email": email,
-        "password": password
-    })
+    client.post(
+        "/users/register",
+        json={"username": username, "email": email, "password": password},
+    )
 
     from app.utils.redis import get_verification_code
+
     code = get_verification_code(email)
     client.post("/auth/verify-email", json={"email": email, "code": code})
 
-    login = client.post("/auth/login", data={"username": username, "password": password})
+    login = client.post(
+        "/auth/login", 
+        data={"username": username, "password": password}
+    )
     token = login.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
@@ -40,9 +43,8 @@ def setup_database():
 
 @pytest.fixture(autouse=True)
 def mock_send_email():
-    with patch("app.routers.user.send_verification_email", new_callable=AsyncMock) as mock1, \
-         patch("app.routers.auth.send_verification_email", new_callable=AsyncMock) as mock2:
-        yield mock1, mock2
+    with patch("app.tasks.email_tasks.send_verification_email_task.delay") as mock:
+        yield mock
 
 
 @pytest.fixture
@@ -62,32 +64,32 @@ def client():
 
 @pytest.fixture
 def registered_user(client):
-    response = client.post("/users/register", json={
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "password123"
-    })
+    response = client.post(
+        "/users/register",
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "password123",
+        },
+    )
     return response.json()
 
 
 @pytest.fixture
 def verified_user(client, registered_user):
-    # get the code directly from Redis
     from app.utils.redis import get_verification_code
+
     code = get_verification_code("test@example.com")
 
-    client.post("/auth/verify-email", json={
-        "email": "test@example.com",
-        "code": code
-    })
+    client.post("/auth/verify-email", json={"email": "test@example.com", "code": code})
     return registered_user
 
 
 @pytest.fixture
 def auth_headers(client, verified_user):
-    response = client.post("/auth/login", data={
-        "username": "testuser",
-        "password": "password123"
-    })
+    response = client.post(
+        "/auth/login", 
+        data={"username": "testuser", "password": "password123"}
+    )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
