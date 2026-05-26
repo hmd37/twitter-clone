@@ -1,10 +1,22 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+import asyncio
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
-from app.utils.dependencies import get_db
-from app.utils.connection_manager import manager
-from app.utils.jwt import decode_access_token
-from app.models.user import User
+
 from app.models.message import Message
+from app.models.user import User
+from app.schemas.message import ConversationUser, MessageResponse
+from app.utils.connection_manager import manager
+from app.utils.dependencies import get_db, require_current_user
+from app.utils.jwt import decode_access_token
 
 router = APIRouter(tags=["Chat"])
 
@@ -25,6 +37,9 @@ async def websocket_endpoint(token: str, websocket: WebSocket, db: Session = Dep
 
     await manager.connect(user_id, websocket)
 
+    # start listening to this user's Redis channel in background
+    subscribe_task = asyncio.create_task(manager.subscribe(user_id))
+
     try:
         while True:
             data = await websocket.receive_json()
@@ -43,14 +58,13 @@ async def websocket_endpoint(token: str, websocket: WebSocket, db: Session = Dep
             receiver = db.query(User).filter(User.username == receiver_username).first()
 
             if not receiver:
-                await websocket.send_json({"error": f"User '{receiver_username}' not found"})
+                await websocket.send_json(
+                    {"error": f"User '{receiver_username}' not found"}
+                )
                 continue
 
-            # save to database
             message = Message(
-                content=content,
-                sender_id=user_id,
-                receiver_id=receiver.id
+                content=content, sender_id=user_id, receiver_id=receiver.id
             )
             db.add(message)
             db.commit()
@@ -61,14 +75,78 @@ async def websocket_endpoint(token: str, websocket: WebSocket, db: Session = Dep
                 "content": message.content,
                 "from": user.username,
                 "to": receiver.username,
-                "created_at": message.created_at.isoformat()
+                "created_at": message.created_at.isoformat(),
             }
 
-            # deliver to receiver if connected
-            await manager.send_to_user(receiver.id, payload)
+            # publish to receiver's Redis channel
+            await manager.publish(receiver.id, payload)
 
-            # echo back to sender with sent flag
+            # echo back to sender
             await websocket.send_json({**payload, "sent": True})
 
     except WebSocketDisconnect:
         manager.disconnect(user_id)
+        subscribe_task.cancel()
+
+
+@router.get("/conversations", response_model=list[ConversationUser])
+def get_conversations(db: Session = Depends(get_db), current_user: User = Depends(require_current_user)):
+    messages = (
+        db.query(Message)
+        .filter(
+            or_(
+                Message.sender_id == current_user.id,
+                Message.receiver_id == current_user.id,
+            )
+        )
+        .all()
+    )
+
+    user_ids = set()
+    for m in messages:
+        if m.sender_id != current_user.id:
+            user_ids.add(m.sender_id)
+        if m.receiver_id != current_user.id:
+            user_ids.add(m.receiver_id)
+
+    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    return users
+
+
+@router.get("/conversations/{username}", response_model=list[MessageResponse])
+def get_conversation(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_current_user),
+):
+    other_user = db.query(User).filter(User.username == username).first()
+
+    if not other_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    messages = (
+        db.query(Message)
+        .filter(
+            or_(
+                and_(
+                    Message.sender_id == current_user.id,
+                    Message.receiver_id == other_user.id,
+                ),
+                and_(
+                    Message.sender_id == other_user.id,
+                    Message.receiver_id == current_user.id,
+                ),
+            )
+        )
+        .order_by(Message.created_at.asc())
+        .all()
+    )
+
+    for m in messages:
+        if m.receiver_id == current_user.id and not m.is_read:
+            m.is_read = True
+    db.commit()
+
+    return messages
