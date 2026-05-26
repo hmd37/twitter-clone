@@ -1,6 +1,7 @@
 # Twitter Clone
 
 ![CI](https://github.com/hmd37/twitter-clone/actions/workflows/ci.yml/badge.svg)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hmd37/twitter-clone)
 
 A Twitter clone built with FastAPI, SQLAlchemy, and PostgreSQL.
 
