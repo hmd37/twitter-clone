@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><title>Chat Test</title></head>
+<body>
+  <input id="token" placeholder="paste your JWT token" style="width:400px">
+  <button onclick="connect()">Connect</button>
+  <br><br>
+  <input id="to" placeholder="send to username">
+  <input id="msg" placeholder="message">
+  <button onclick="send()">Send</button>
+  <br><br>
+  <div id="log" style="font-family:monospace;white-space:pre"></div>
+
+  <script>
+    let ws;
+
+    function connect() {
+      const token = document.getElementById("token").value;
+      ws = new WebSocket(`ws://localhost:8000/ws/${token}`);
+      ws.onmessage = e => log("← " + e.data);
+      ws.onopen = () => log("connected");
+      ws.onclose = e => log("disconnected: " + e.code);
+    }
+
+    function send() {
+      const to = document.getElementById("to").value;
+      const content = document.getElementById("msg").value;
+      ws.send(JSON.stringify({ to, content }));
+      log(`→ to ${to}: ${content}`);
+    }
+
+    function log(msg) {
+      document.getElementById("log").textContent += msg + "\n";
+    }
+  </script>
+</body>
+</html>
