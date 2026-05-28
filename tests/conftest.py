@@ -27,11 +27,17 @@ def create_verified_user(client, username: str, email: str, password: str) -> di
     client.post("/auth/verify-email", json={"email": email, "code": code})
 
     login = client.post(
-        "/auth/login", 
-        data={"username": username, "password": password}
+        "/auth/login", data={"username": username, "password": password}
     )
     token = login.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+def get_token(client, username: str) -> str:
+    response = client.post(
+        "/auth/login", data={"username": username, "password": "password123"}
+    )
+    return response.json()["access_token"]
 
 
 @pytest.fixture(autouse=True)
@@ -45,6 +51,15 @@ def setup_database():
 def mock_send_email():
     with patch("app.tasks.email_tasks.send_verification_email_task.delay") as mock:
         yield mock
+
+
+@pytest.fixture(autouse=True)
+def mock_subscribe():
+    async def fake_subscribe(user_id: int):
+        pass
+
+    with patch("app.utils.connection_manager.ConnectionManager.subscribe", side_effect=fake_subscribe):
+        yield
 
 
 @pytest.fixture
@@ -80,7 +95,6 @@ def verified_user(client, registered_user):
     from app.utils.redis import get_verification_code
 
     code = get_verification_code("test@example.com")
-
     client.post("/auth/verify-email", json={"email": "test@example.com", "code": code})
     return registered_user
 
@@ -88,8 +102,7 @@ def verified_user(client, registered_user):
 @pytest.fixture
 def auth_headers(client, verified_user):
     response = client.post(
-        "/auth/login", 
-        data={"username": "testuser", "password": "password123"}
+        "/auth/login", data={"username": "testuser", "password": "password123"}
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
