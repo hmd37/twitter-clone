@@ -10,6 +10,5 @@ wheels/
 .venv
 .env
 .vscode
-uv.lock
 *.db
 .pytest_cache

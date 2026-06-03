@@ -1,11 +1,23 @@
 from fastapi import Depends, FastAPI
+from sqladmin import Admin
 
+from app.admin import FollowAdmin, LikeAdmin, MessageAdmin, TweetAdmin, UserAdmin
+from app.database import engine
 from app.models.user import User
-from app.routers import auth, follow, like, tweet, user, chat
-from app.utils.dependencies import get_current_user, require_current_user
+from app.routers import auth, chat, follow, like, tweet, user
+from app.utils.dependencies import require_current_user
 
 app = FastAPI(title="Twitter Clone")
+admin = Admin(app, engine)
 
+# setup admin
+admin.add_view(UserAdmin)
+admin.add_view(TweetAdmin)
+admin.add_view(FollowAdmin)
+admin.add_view(LikeAdmin)
+admin.add_view(MessageAdmin)
+
+# setup routers
 app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(tweet.router)
